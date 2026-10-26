@@ -42,6 +42,21 @@ func NewService(method string, key []byte, password string, udpTimeout int64, ha
 	return s, nil
 }
 
+// NewServiceWithCapacity limits the UDP session table and drops datagrams for
+// a session whose queue is full, so one slow peer cannot block the listener.
+func NewServiceWithCapacity(method string, key []byte, password string, udpTimeout int64, maxEntries int, handler shadowsocks.Handler) (*Service, error) {
+	m, err := New(method, key, password)
+	if err != nil {
+		return nil, err
+	}
+	s := &Service{
+		Method:  m,
+		handler: handler,
+		udpNat:  udpnat.NewWithCapacity[netip.AddrPort](udpTimeout, maxEntries, true, handler),
+	}
+	return s, nil
+}
+
 func (s *Service) Name() string {
 	return s.name
 }
